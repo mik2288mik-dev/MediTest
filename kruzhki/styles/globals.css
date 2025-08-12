@@ -1,0 +1,14 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light dark;
+}
+
+html, body {
+  height: 100%;
+}
+
+.circle-mask {
+  mask-image: radial-gradient(circle at center, #000 98%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle at center, #000 98%, transparent 100%);
+}

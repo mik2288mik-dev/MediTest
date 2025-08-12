@@ -1,0 +1,117 @@
+// Prisma schema for Kruzhki (Circles)
+// PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Visibility {
+  CLOSE
+  FRIENDS
+  PUBLIC
+}
+
+model User {
+  id        String   @id
+  username  String?
+  fullName  String?
+  avatar    String?
+  createdAt DateTime @default(now())
+
+  circles   Circle[]
+  reactions Reaction[]
+  following Follow[]  @relation("following")
+  followers Follow[]  @relation("followers")
+  events    Event[]
+  reports   Report[]
+}
+
+model Circle {
+  id         String     @id @default(cuid())
+  authorId   String
+  author     User       @relation(fields: [authorId], references: [id])
+  mediaUrl   String
+  posterUrl  String
+  duration   Int
+  visibility Visibility  @default(PUBLIC)
+  expiresAt  DateTime
+  parentId   String?
+  parent     Circle?    @relation("Parent", fields: [parentId], references: [id])
+  children   Circle[]   @relation("Parent")
+  createdAt  DateTime   @default(now())
+  shadowed   Boolean    @default(false)
+
+  // orbit relations
+  rootOrbits  Orbit[]   @relation("Root")
+  replyOrbits Orbit[]   @relation("Reply")
+
+  reactions Reaction[]
+  reports   Report[]
+
+  @@index([authorId])
+  @@index([expiresAt])
+  @@index([createdAt])
+}
+
+model Orbit {
+  id      String @id @default(cuid())
+  rootId  String
+  root    Circle @relation("Root", fields: [rootId], references: [id])
+  replyId String
+  reply   Circle @relation("Reply", fields: [replyId], references: [id])
+  ring    Int
+
+  @@unique([rootId, replyId])
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  circleId  String
+  circle    Circle   @relation(fields: [circleId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([circleId, userId])
+  @@index([userId])
+}
+
+model Follow {
+  followerId String
+  followingId String
+  follower   User   @relation("following", fields: [followerId], references: [id])
+  following  User   @relation("followers", fields: [followingId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@id([followerId, followingId])
+  @@index([followingId])
+}
+
+model Report {
+  id        String   @id @default(cuid())
+  circleId  String
+  circle    Circle   @relation(fields: [circleId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  reason    String
+  createdAt DateTime @default(now())
+
+  @@index([circleId, createdAt])
+}
+
+model Event {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  circleId  String?
+  ts        DateTime @default(now())
+
+  @@index([userId, ts])
+  @@index([circleId, ts])
+}
